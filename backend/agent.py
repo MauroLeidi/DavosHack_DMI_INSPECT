@@ -61,6 +61,8 @@ def fetch_energy_data(curve_name: str, start_date: str, end_date: str) -> List[D
         # Reset index to get date column
         df.reset_index(inplace=True)
         df.columns = ['date', 'value']
+
+        df = df.where(pd.notnull(df), None)
         
         # Convert date to string for JSON serialization
         df['date'] = df['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -77,7 +79,7 @@ def final_answer(text_content: str, chart_data: Optional[Dict[str, Any]] = None)
 
     Args:
         text_content: The complete textual explanation of the answer.
-        chart_data: A dictionary with chart data (keys 'type', 'data', etc.) or None if no chart is needed.
+        chart_data: A dictionary with chart data (keys 'type', 'data', etc.) in the syntax of chart.js or None if no chart is needed.
     """
     return {
         "text_content": text_content,
@@ -113,6 +115,24 @@ def get_or_create_agent(session_id: str) -> CodeAgent:
     
     return AGENT_STORE[session_id]
 
+import math  # <--- AGGIUNGI QUESTO IMPORT
+
+def clean_for_json(obj):
+    """
+    Scansiona ricorsivamente liste e dizionari.
+    Sostituisce float('nan'), float('inf'), float('-inf') con None.
+    JSON standard non supporta NaN/Inf.
+    """
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, dict):
+        return {k: clean_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_for_json(v) for v in obj]
+    return obj
+
 def run_agent_logic(message: str, session_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Runs the agent. If session_id is provided, memory is preserved.
@@ -142,4 +162,7 @@ def run_agent_logic(message: str, session_id: Optional[str] = None) -> Dict[str,
         }
     
     output_data["session_id"] = session_id
+
+
+    output_data = clean_for_json(output_data)
     return output_data
