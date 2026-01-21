@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Energy Market Intelligence Dashboard Design System */
+
+@layer base {
+  :root {
+    /* Volue Core backgrounds - teal-tinted neutrals */
+    --background: 190 8% 97%;
+    --foreground: 189 74% 12%;
+    
+    /* Card surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 189 74% 12%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 189 74% 12%;
+    
+    /* Primary - Volue Deep Teal (#082d35) */
+    --primary: 189 74% 12%;
+    --primary-foreground: 190 20% 98%;
+    
+    /* Secondary - Volue Gray 5 */
+    --secondary: 190 10% 96%;
+    --secondary-foreground: 189 74% 12%;
+    
+    /* Muted - Volue Gray tones */
+    --muted: 190 10% 95%;
+    --muted-foreground: 189 20% 40%;
+    
+    /* Accent - Volue Teal 120 (#01484a → adjusted for vibrancy) */
+    --accent: 181 98% 15%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Semantic colors - slightly desaturated for professional tone */
+    --destructive: 1 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Alert/Anomaly colors - desaturated red */
+    --anomaly: 1 70% 55%;
+    --anomaly-soft: 1 50% 95%;
+    --anomaly-foreground: 1 60% 30%;
+    
+    /* Warning - desaturated amber/orange */
+    --warning: 40 75% 50%;
+    --warning-soft: 40 60% 94%;
+    --warning-foreground: 40 70% 25%;
+    
+    /* Success - desaturated green, Volue-aligned */
+    --success: 152 55% 40%;
+    --success-soft: 152 40% 94%;
+    --success-foreground: 152 50% 20%;
+    
+    /* Data visualization - Volue-aligned palette */
+    --chart-price: 189 74% 30%;
+    --chart-volatility: 270 45% 55%;
+    --chart-load: 152 55% 40%;
+    --chart-baseline: 190 15% 65%;
+    --chart-anomaly: 1 70% 55%;
+    --chart-grid: 190 10% 90%;
+    
+    /* UI elements */
+    --border: 190 12% 90%;
+    --input: 190 12% 90%;
+    --ring: 181 98% 15%;
+    --radius: 0.75rem;
+    
+    /* Sidebar - Volue Deep */
+    --sidebar-background: 189 74% 12%;
+    --sidebar-foreground: 190 20% 98%;
+    --sidebar-primary: 181 80% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 189 60% 18%;
+    --sidebar-accent-foreground: 190 20% 98%;
+    --sidebar-border: 189 60% 18%;
+    --sidebar-ring: 181 80% 40%;
+    
+    /* Typography */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    
+    /* Shadows - teal-tinted */
+    --shadow-sm: 0 1px 2px 0 hsl(189 30% 10% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(189 30% 10% / 0.05), 0 2px 4px -2px hsl(189 30% 10% / 0.03);
+    --shadow-lg: 0 10px 15px -3px hsl(189 30% 10% / 0.06), 0 4px 6px -4px hsl(189 30% 10% / 0.04);
+    --shadow-card: 0 1px 3px 0 hsl(189 30% 10% / 0.04), 0 1px 2px -1px hsl(189 30% 10% / 0.04);
+    --shadow-card-hover: 0 4px 12px -2px hsl(189 30% 10% / 0.08);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  /* Insight Cards */
+  .insight-card {
+    @apply relative bg-card rounded-xl p-6 transition-all duration-200;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .insight-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  
+  .insight-card-anomaly {
+    @apply border-l-4;
+    border-left-color: hsl(var(--anomaly));
+  }
+  
+  .insight-card-warning {
+    @apply border-l-4;
+    border-left-color: hsl(var(--warning));
+  }
+  
+  .insight-card-success {
+    @apply border-l-4;
+    border-left-color: hsl(var(--success));
+  }
+  
+  /* Severity badges */
+  .badge-high {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--anomaly-soft));
+    color: hsl(var(--anomaly-foreground));
+  }
+  
+  .badge-medium {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--warning-soft));
+    color: hsl(var(--warning-foreground));
+  }
+  
+  .badge-low {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: hsl(var(--success-soft));
+    color: hsl(var(--success-foreground));
+  }
+  
+  /* Section styling */
+  .section-title {
+    @apply text-lg font-semibold text-foreground mb-1;
+  }
+  
+  .section-subtitle {
+    @apply text-sm text-muted-foreground mb-6;
+  }
+  
+  /* Chart containers */
+  .chart-container {
+    @apply bg-card rounded-xl p-6;
+    box-shadow: var(--shadow-card);
+  }
+  
+  /* Narrative block */
+  .narrative-block {
+    @apply bg-card rounded-xl p-6 max-w-none;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .narrative-block strong {
+    @apply text-foreground font-semibold;
+  }
+  
+  /* AI label */
+  .ai-label {
+    @apply inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full;
+  }
+  
+  /* Data table */
+  .data-table {
+    @apply w-full;
+  }
+  
+  .data-table th {
+    @apply text-left text-xs font-medium text-muted-foreground uppercase tracking-wider pb-3 border-b border-border;
+  }
+  
+  .data-table td {
+    @apply py-3 text-sm border-b border-border;
+  }
+  
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+  
+  /* Chat input */
+  .chat-input-container {
+    @apply relative bg-card rounded-xl;
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Watch card */
+  .watch-card {
+    @apply flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--muted-foreground)));
+  }
+  
+  .sparkline-positive {
+    stroke: hsl(var(--success));
+  }
+  
+  .sparkline-negative {
+    stroke: hsl(var(--anomaly));
+  }
+  
+  .sparkline-neutral {
+    stroke: hsl(var(--chart-price));
+  }
+
+  /* Smooth choropleth updates on Leaflet polygons */
+  .price-choropleth {
+    transition: fill 240ms ease, fill-opacity 240ms ease, stroke 180ms ease;
+  }
+}
