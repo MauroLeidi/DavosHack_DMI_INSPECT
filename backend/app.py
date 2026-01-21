@@ -13,6 +13,7 @@ from fastapi import Body
 from arch import arch_model
 from scipy.stats import median_abs_deviation
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
 class VolatilityRequest(BaseModel):
     area: str
@@ -285,7 +286,7 @@ def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
     if area not in EU_AREAS:
         raise HTTPException(status_code=400, detail=f"Invalid area: {area}")
 
-    # Fetch past 6 months of hourly data
+    # --- Fetch past 6 months of hourly spot price data ---
     end = datetime(date_.year, date_.month, date_.day, 23, 0, 0)
     start = end - pd.DateOffset(months=6)
 
@@ -331,7 +332,7 @@ def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
     vol_level = classify_vol(today_vol.mean()) if not today_vol.empty else "unknown"
     vol_percentile = float((cond_vol <= today_vol.mean()).mean()) if not today_vol.empty else None
 
-    # Price anomaly detection using MAD
+    # --- Price anomaly detection using MAD ---
     mad_val = median_abs_deviation(returns, scale="normal")
     median_val = returns.median()
     price_today = returns[returns.index.date == date_]
@@ -346,6 +347,54 @@ def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
     chart_price = today_series.round(2).tolist()
     chart_volatility = today_vol.round(2).tolist()
 
+    # --- Fetch forecast curves (Spot, Consumption, SPV, Wind) ---
+
+    curves = {
+        "Spot Price": f"pri de spot ec00 €/mwh cet min15 f",           # Forecasted day-ahead
+        "Consumption Forecast": f"con de ec06 mwh/h cet min15 f",
+        "SPV Forecast": f"pro de spv ec06 mwh/h cet min15 f",
+        "Wind Forecast": f"pro de wnd ec06 mwh/h cet min15 f"
+    }   
+    series_dict = {}
+
+    for name, curve_name in curves.items():
+        curve = SESSION.get_curve(name=curve_name)
+        # Get latest instance with data
+        df_instances = curve.search_instances(
+            issue_date_from=end - pd.DateOffset(days=1),
+            issue_date_to=end,
+            with_data=True
+        )
+        print('HERE: ')
+        print(df_instances)
+        if not df_instances:
+            series_dict[name] = pd.Series(dtype=float)
+            continue
+        df = df_instances[-1].to_pandas()
+        print(df)
+        # Resample to hourly
+        resampled = df.resample("H").mean()
+        series_dict[name] = resampled
+
+    print('HERE2')
+    print(series_dict)
+    # Combine into a single DataFrame and drop missing hours
+    df_all = pd.DataFrame(series_dict).dropna()
+    print('DF ALL')
+    print(df_all)
+    # Min-Max normalize 0-1
+    if not df_all.empty:
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        df_norm = pd.DataFrame(
+            scaler.fit_transform(df_all),
+            index=df_all.index,
+            columns=df_all.columns
+        )
+        # Convert to lists
+        forecasts = {col: df_norm[col].round(3).tolist() for col in df_norm.columns}
+    else:
+        forecasts = {name: [] for name in curves.keys()}
+
     return {
         "area": area.upper(),
         "date": date_.isoformat(),
@@ -358,5 +407,6 @@ def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
             "unusual": unusual,
             "excessive_return": float(excessive_return) if excessive_return is not None else None,
             "chart_price": chart_price  # hourly prices
-        }
+        },
+        "forecasts": forecasts  # Spot, Consumption, SPV, Wind
     }
