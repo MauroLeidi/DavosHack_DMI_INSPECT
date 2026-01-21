@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState,useRef } from "react";
 import { AlertTriangle, Activity } from "lucide-react"; // Ho rimosso TrendingUp che non serve più
+import { useReactToPrint } from "react-to-print"; // Importa la libreria
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { NarrativeSummary } from "@/components/dashboard/NarrativeSummary";
@@ -17,6 +18,12 @@ const Index = () => {
   // 1. MASTER STATE for the date
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 0, 21));
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    contentRef,
+    documentTitle: `Market_Brief_${selectedDate.toISOString().split('T')[0]}`,
+  });
+
   return (
     <HighlightProvider>
       <div className="min-h-screen bg-background">
@@ -26,8 +33,10 @@ const Index = () => {
         <DashboardHeader 
           date={selectedDate} 
           setDate={setSelectedDate} 
+          onExport={handlePrint}
         />
         
+        <div ref={contentRef} className="print:p-6 print:bg-white">
         {/* MODIFICA QUI: grid-cols-1 md:grid-cols-2 (Invece di 3) */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
           <InsightCard
@@ -59,7 +68,7 @@ const Index = () => {
         </div>
 
         {/* 3. PASS STATE TO MAP */}
-        <section className="mt-8">
+        <section className="mt-8 break-inside-avoid">
           <EuropePriceMap date={selectedDate} />
         </section>
         
@@ -85,8 +94,11 @@ const Index = () => {
         </footer>
         </div>
       </div>
+      </div>
       
+      <div className="print:hidden">
       <ChatInterface />
+      </div>
     </HighlightProvider>
   );
 };
