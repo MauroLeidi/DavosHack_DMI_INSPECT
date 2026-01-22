@@ -1,0 +1,40 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # --- Python Formatting & Linting (Backend) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.6
+    hooks:
+      - id: ruff
+        args: [ --fix, --exit-non-zero-on-fix ]
+      - id: ruff-format
+
+  # --- TS/JS/CSS Formatting (Frontend) ---
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.3
+    hooks:
+      - id: prettier
+        types_or: [javascript, jsx, ts, tsx, css, scss, html, json]
+        additional_dependencies:
+          - prettier
+          - prettier-plugin-tailwindcss # Keeps Tailwind classes sorted
+
+  # --- Frontend Linting (ESLint) ---
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.53.0
+    hooks:
+      - id: eslint
+        files: ^energy-sensemaker/src/
+        args: [--fix]
+        additional_dependencies:
+          - eslint
+          - eslint-plugin-react
+          - eslint-plugin-react-hooks
+          - "@typescript-eslint/eslint-plugin"
+          - "@typescript-eslint/parser"
