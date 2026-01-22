@@ -377,7 +377,7 @@ export function ChatInterface() {
                           <div className="flex-1 space-y-3 min-w-0">
                             {/* Text Content */}
                             <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm p-4 shadow-sm">
-                              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line break-words">
                                 {message.content}
                               </p>
                             </div>
