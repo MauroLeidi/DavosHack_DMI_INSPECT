@@ -286,9 +286,16 @@ export function EuropePriceMap({ date }: EuropePriceMapProps) {
       </div>
 
       <div className="relative rounded-xl overflow-hidden border border-border bg-slate-50 shadow-sm" style={{ height: "420px" }}>
+        {/* OVERLAY DI CARICAMENTO MIGLIORATO */}
         {isLoading && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/50 backdrop-blur-sm">
-            <div className="text-sm font-medium text-muted-foreground animate-pulse">Loading market data...</div>
+          <div className="absolute inset-0 z-[1001] flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px] transition-all duration-300">
+            <div className="flex flex-col items-center gap-3">
+              {/* Spinner animato usando Lucide (assicurati di averlo importato o usa un div animato) */}
+              <div className="w-8 h-8 border-4 border-[#333670]/20 border-t-[#333670] rounded-full animate-spin" />
+              <span className="text-sm font-semibold text-[#333670] tracking-wide animate-pulse">
+                Updating Market Map...
+              </span>
+            </div>
           </div>
         )}
         
