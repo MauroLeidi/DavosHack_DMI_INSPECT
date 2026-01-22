@@ -2,13 +2,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2 } from "lucide-react";
 
-// Mock data to be used while the API is commented out
-const MOCK_NARRATIVE = `The current power market situation in Switzerland (code: CH) is characterized by high volatility, exceeding 71% of the levels observed over the past six months. Despite this elevated volatility, no price anomalies have been detected. The market has experienced an excessive return above the median of 5.75 €/MWh, indicating a notable deviation in pricing compared to typical levels.
-
-Analyzing the drivers behind these market conditions, the forecast data reveals that peak spot prices align with high consumption periods and relatively low renewable energy output, particularly during early morning and late afternoon. Wind power is expected to be moderate to high in the later hours, helping to stabilize prices somewhat. Solar output, however, peaks at midday but then rapidly declines, which coincides with periods of high consumption, exerting upward pressure on spot prices.
-
-For traders, the outlook suggests monitoring intra-day price fluctuations closely due to the forecasted high volatility and the anticipated variability in solar and wind generation. Strategies that account for potential price spikes during high demand periods, particularly when renewable outputs are low, will be crucial. Additionally, leveraging the anticipated increase in wind generation towards the evening could provide opportunities to mitigate cost risks associated with price volatility.`;
-
 interface VolatilityResponse {
   area: string;
   date: string;
@@ -40,7 +33,6 @@ export function NarrativeSummary({ data }: NarrativeProps) {
       setIsGenerating(true);
       setNarrative(null);
 
-      /* --- REAL API LOGIC (Commented Out) ---
       try {
         const response = await fetch("http://localhost:8000/v1/narrative", {
           method: "POST",
@@ -64,15 +56,6 @@ export function NarrativeSummary({ data }: NarrativeProps) {
       } finally {
         setIsGenerating(false);
       }
-      --------------------------------------- */
-
-      // --- MOCK LOGIC START ---
-      // Simulate a 1.2s delay to show the loading state
-      setTimeout(() => {
-        setNarrative(MOCK_NARRATIVE);
-        setIsGenerating(false);
-      }, 1200);
-      // --- MOCK LOGIC END ---
     };
 
     generateInsight();
