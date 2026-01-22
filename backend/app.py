@@ -223,49 +223,61 @@ def get_swiss_forecast_chart():
         point_radius = []
         for v in values:
             if v == round(float(min_price), 2):
-                point_colors.append('red') # Evidenzia il minimo
+                point_colors.append('#ef4444')
                 point_radius.append(6)
             else:
-                point_colors.append('rgba(54, 162, 235, 1)')
+                point_colors.append('#333670')
                 point_radius.append(3)
 
         response_data = {
-            "analysis": {
-                "current_price": round(float(subset.iloc[0]), 2),
-                "min_price": round(float(min_price), 2),
-                "max_price": round(float(max_price), 2),
-                "best_time_label": f"{best_time_str} ({best_day_str})",
-                "advice": f"Il momento migliore per consumare è alle {best_time_str} con un prezzo di {min_price:.2f} €/MWh."
+    "analysis": {
+        "current_price": round(float(subset.iloc[0]), 2),
+        "min_price": round(float(min_price), 2),
+        "max_price": round(float(max_price), 2),
+        "best_time_label": f"{best_time_str} ({best_day_str})",
+        "advice": f"The optimal window for energy consumption is at {best_time_str} with a price of {min_price:.2f} €/MWh."
+    },
+    "chart_js": {
+        "type": "line",
+        "data": {
+            "labels": labels,
+            "datasets": [
+                {
+                    "label": "Spot Price Forecast (CH) - EC00",
+                    "data": values,
+                    # Brand Color: #333670
+                    "borderColor": "#333670",
+                    "backgroundColor": "rgba(51, 54, 112, 0.1)",
+                    "borderWidth": 2,
+                    "pointBackgroundColor": point_colors,
+                    "pointRadius": point_radius,
+                    "tension": 0.4,
+                    "fill": True
+                }
+            ]
+        },
+        "options": {
+            "responsive": True,
+            "maintainAspectRatio": False,
+            "plugins": {
+                "legend": {"display": False},
+                "title": {
+                    "display": True, 
+                    "text": "48h Swiss Spot Price Forecast"
+                }
             },
-            "chart_js": {
-                "type": "line",
-                "data": {
-                    "labels": labels,
-                    "datasets": [
-                        {
-                            "label": "Price Forecast (CH) - EC00",
-                            "data": values,
-                            "borderColor": "rgba(54, 162, 235, 1)",
-                            "backgroundColor": "rgba(54, 162, 235, 0.2)",
-                            "borderWidth": 2,
-                            "pointBackgroundColor": point_colors,
-                            "pointRadius": point_radius,
-                            "tension": 0.4 # Curvatura linea
-                        }
-                    ]
+            "scales": {
+                "y": {
+                    "beginAtZero": False, 
+                    "title": {"display": True, "text": "Price (€/MWh)"}
                 },
-                "options": {
-                    "responsive": True,
-                    "plugins": {
-                        "legend": {"display": False},
-                        "title": {"display": True, "text": "Previsione 48h Prezzi Spot (Svizzera)"}
-                    },
-                    "scales": {
-                        "y": {"beginAtZero": False, "title": {"display": True, "text": "€ / MWh"}}
-                    }
+                "x": {
+                    "title": {"display": True, "text": "Time (CET)"}
                 }
             }
         }
+    }
+}
         
         return response_data
 

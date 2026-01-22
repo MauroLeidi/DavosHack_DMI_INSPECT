@@ -296,8 +296,8 @@ export function ChatInterface() {
   className={cn(
     "fixed right-5 bottom-5 z-50 w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center hover:scale-105 active:scale-95",
     isOpen
-      ? "bg-accent text-accent-foreground hover:bg-accent/90"
-      : "bg-white text-accent hover:bg-muted"
+      ? "bg-[#333670] text-white"
+      : "bg-white text-[#333670] hover:bg-muted"
   )}
   aria-label="Open Market Intelligence Agent"
 >
@@ -330,11 +330,11 @@ export function ChatInterface() {
           >
             {/* Header */}
             <div className="p-4 border-b border-border flex items-center gap-3 flex-shrink-0 bg-card">
-              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-accent" />
+              <div className="w-10 h-10 rounded-lg bg-[#333670]/10 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-[#333670]" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground">Market Intelligence Agent</h3>
+                <h3 className="font-semibold text-foreground text-[#333670]">Market Intelligence Agent</h3>
                 <p className="text-xs text-muted-foreground">Ask about today's market</p>
               </div>
               <button
@@ -349,7 +349,7 @@ export function ChatInterface() {
             <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/50">
               {messages.length === 0 ? (
                 <div className="text-center text-muted-foreground text-sm py-12">
-                  <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                  <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-50 text-[#333670]" />
                   <p>Ask me anything about market conditions, trends, or specific curves.</p>
                 </div>
               ) : (
@@ -361,7 +361,7 @@ export function ChatInterface() {
                     <div 
                       className={`max-w-[85%] ${
                         message.role === "user" 
-                          ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3" 
+                          ? "bg-[#333670] text-white rounded-2xl rounded-tr-sm px-4 py-3"
                           : "space-y-3 w-full"
                       }`}
                     >
@@ -370,8 +370,8 @@ export function ChatInterface() {
                       ) : (
                         // Assistant Message Layout
                         <div className="flex gap-3">
-                           <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
-                            <Sparkles className="w-4 h-4 text-accent" />
+                           <div className="w-8 h-8 rounded-full bg-[#333670]/10 flex items-center justify-center flex-shrink-0 mt-1">
+                            <Sparkles className="w-4 h-4 text-[#333670]" />
                           </div>
                           
                           <div className="flex-1 space-y-3 min-w-0">
@@ -386,7 +386,7 @@ export function ChatInterface() {
                             {message.chartData && (
                               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
                                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-50">
-                                  <BarChart3 className="w-4 h-4 text-accent" />
+                                  <BarChart3 className="w-4 h-4 text-[#333670]" />
                                   <span className="text-xs font-semibold text-gray-500">Generated Chart</span>
                                 </div>
                                 {renderChart(message.chartData)}
@@ -424,7 +424,7 @@ export function ChatInterface() {
                 <div className="flex justify-start">
                    <div className="flex gap-3 max-w-[85%]">
                       <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                        <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                        <Loader2 className="w-4 h-4 text-[#333670] animate-spin" />
                       </div>
                       <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm p-4 shadow-sm flex items-center">
                         <span className="text-xs text-muted-foreground animate-pulse">Thinking...</span>
@@ -465,7 +465,7 @@ export function ChatInterface() {
                   size="icon"
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="rounded-xl w-10 h-10 bg-accent hover:bg-accent/90 shrink-0 shadow-sm"
+                  className="rounded-xl w-10 h-10 bg-[#333670] hover:bg-[#333670]/90 shrink-0 shadow-sm"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>

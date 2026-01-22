@@ -94,7 +94,7 @@ const Index = () => {
                   className={`
                     flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all duration-200
                     ${activeTab === tab.id 
-                      ? "bg-primary text-primary-foreground shadow-md scale-105" 
+                      ? "bg-[#333670] text-primary-foreground shadow-md scale-105" 
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}
                   `}
                 >
