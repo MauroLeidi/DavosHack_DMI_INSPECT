@@ -14,12 +14,15 @@ from arch import arch_model
 from scipy.stats import median_abs_deviation
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from openai import AsyncOpenAI # Ensure you have openai>=1.0.0 installed
+
 
 class VolatilityRequest(BaseModel):
     area: str
     date: date
 
 load_dotenv()
+
 
 app = FastAPI(title="DavosHack API", version="0.1.0")
 
@@ -39,10 +42,20 @@ EU_AREAS = [
 
 DEFAULT_RUN = "EC00"
 
+# Initialize Async Client (better for FastAPI than global openai.api_key)
+client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
 # --- PYDANTIC MODELS ---
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None  # User sends this back to keep memory
+
+class NarrativeRequest(BaseModel):
+    date: str
+    area: str  # <--- Crucial: The region (e.g., "CH", "DE")
+    volatility_context: Dict
+    anomaly_context: Dict
+    forecast_data: Dict[str, List[float]] # The forecast arrays
 
 def make_session() -> vit.Session:
     cid = os.environ.get("CLIENT_ID")
@@ -410,3 +423,69 @@ def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
         },
         "forecasts": forecasts  # Spot, Consumption, SPV, Wind
     }
+
+@app.post("/v1/narrative")
+async def generate_market_narrative(req: NarrativeRequest):
+    """
+    Generates a text summary using OpenAI based on the calculated stats.
+    """
+    try:
+        # 1. Prepare a human-readable summary of the stats for the prompt
+        vol_level = req.volatility_context.get("level", "unknown")
+        vol_percentile = req.volatility_context.get("percentile")
+        is_anomaly = req.anomaly_context.get("unusual", False)
+        excess_return = req.anomaly_context.get("excessive_return", 0)
+        
+        # Format percentile for readability
+        pct_text = f"{int(vol_percentile * 100)}%" if vol_percentile is not None else "N/A"
+        
+        # 2. Construct the System Prompt
+        system_prompt = (
+            "You are a senior energy market analyst for a trading desk. "
+            "Your job is to write a concise, professional daily summary based on raw market data. "
+            "Tone: Objective, analytical, and direct. Avoid fluff."
+        )
+
+        # 3. Construct the User Prompt with specific data
+        user_content = f"""
+        Analyze the power market situation for the country associated with code: {req.area.upper()} on Date: {req.date}.
+
+        STATISTICAL DATA:
+        - Volatility Regime: {vol_level.upper()} (Higher than {pct_text} of last 6 months).
+        - Price Anomaly Detected: {"YES" if is_anomaly else "NO"}.
+        - Excessive Return above median: {excess_return} €/MWh.
+
+        FORECAST CONTEXT (Normalized trends 0-1 for the next 24h):
+        - The user has provided normalized forecast arrays for 'Wind', 'Solar', 'Consumption', and 'Spot Price'.
+        - Review the provided JSON data to see correlations.
+        
+        INSTRUCTIONS:
+        1. Write exactly 3 short paragraphs.
+        2. Paragraph 1: Describe the **Volatility State** and **Price Anomaly** (if any). Be specific with numbers.
+        3. Paragraph 2: Analyze the **Drivers**. Look at the forecast data provided in the JSON. 
+           (e.g., if Price is high and Wind is low, mention 'low renewable output').
+           (e.g., if Price is low and Solar is high, mention 'strong solar penetration').
+        4. Paragraph 3: Brief outlook or advisory note for traders.
+        
+        RAW FORECAST DATA:
+        {req.forecast_data}
+        """
+
+        # 4. Call OpenAI
+        response = await client.chat.completions.create(
+            model="gpt-4o", # Or gpt-3.5-turbo if you want to save cost
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
+            temperature=0.7,
+            max_tokens=400
+        )
+
+        # 5. Return the content
+        narrative_text = response.choices[0].message.content
+        return {"content": narrative_text}
+
+    except Exception as e:
+        print(f"Error generating narrative: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
