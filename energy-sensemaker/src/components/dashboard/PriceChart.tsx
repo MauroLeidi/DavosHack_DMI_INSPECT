@@ -1,3 +1,4 @@
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   LineChart,
@@ -7,152 +8,132 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceArea,
+  Legend,
 } from "recharts";
-import { useHighlight } from "@/contexts/HighlightContext";
 
-// Sample data for the price chart
-const generatePriceData = () => {
-  const data = [];
-  const basePrice = 78;
-  const hours = 24 * 14; // 14 days
-  
-  for (let i = 0; i < hours; i++) {
-    const day = Math.floor(i / 24);
-    const hour = i % 24;
+// Tipi per i dati in arrivo dalla tua API
+interface ForecastData {
+  [key: string]: number[];
+}
+
+interface ForecastsChartProps {
+  forecasts: ForecastData; // Il campo "forecasts" dell'API
+  area: string;
+}
+
+export function ForecastsChart({ forecasts, area }: ForecastsChartProps) {
+  // Stato per gestire quale serie è in evidenza
+  const [highlightedSeries, setHighlightedSeries] = useState<string | null>("Spot Price");
+
+  // Trasformiamo l'oggetto dell'API in un array di oggetti per Recharts
+  // Formato: [{ hour: 0, "Spot Price": 0.5, "Consumption": 0.2, ... }, ...]
+  const chartData = useMemo(() => {
+    const keys = Object.keys(forecasts);
+    if (keys.length === 0) return [];
     
-    // Add daily pattern
-    let hourlyFactor = 1;
-    if (hour >= 7 && hour <= 9) hourlyFactor = 1.3;
-    else if (hour >= 18 && hour <= 21) hourlyFactor = 1.2;
-    else if (hour >= 0 && hour <= 5) hourlyFactor = 0.7;
+    const length = forecasts[keys[0]].length;
+    const data = [];
     
-    // Add anomaly on day 13 (Jan 15)
-    let price = basePrice * hourlyFactor + (Math.random() - 0.5) * 15;
-    if (day === 13 && hour >= 7 && hour <= 9) {
-      price = 120 + Math.random() * 25; // Spike
+    for (let i = 0; i < length; i++) {
+      const entry: any = { hour: `${i}:00` };
+      keys.forEach((key) => {
+        entry[key] = forecasts[key][i];
+      });
+      data.push(entry);
     }
-    
-    data.push({
-      hour: i,
-      date: `Jan ${(day + 2).toString().padStart(2, '0')}`,
-      time: `${hour.toString().padStart(2, '0')}:00`,
-      price: Math.round(price * 10) / 10,
-      baseline: basePrice * hourlyFactor,
-      isAnomaly: day === 13 && hour >= 7 && hour <= 9,
-    });
-  }
-  
-  return data;
-};
+    return data;
+  }, [forecasts]);
 
-const priceData = generatePriceData();
+  // Configurazione colori e stili per le serie
+  const seriesConfig = [
+    { key: "Spot Price", color: "#3b82f6" }, // Blue
+    { key: "Consumption Forecast", color: "#ef4444" }, // Red
+    { key: "SPV Forecast", color: "#f59e0b" }, // Yellow/Orange
+    { key: "Wind Forecast", color: "#10b981" }, // Green
+  ];
 
-// Get last 72 hours for display
-const displayData = priceData.slice(-72);
-
-export function PriceChart() {
-  const { activeHighlight } = useHighlight();
-  
-  const isHighlighted = activeHighlight === "price";
-  const isFaded = activeHighlight !== null && activeHighlight !== "price";
+  const handleLegendClick = (e: any) => {
+    const { dataKey } = e;
+    setHighlightedSeries(highlightedSeries === dataKey ? null : dataKey);
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.4 }}
-      className={`chart-container transition-all duration-150 ${
-        isHighlighted 
-          ? "ring-2 ring-accent/50 shadow-lg" 
-          : isFaded 
-            ? "opacity-50" 
-            : ""
-      }`}
+      className="chart-container bg-card p-6 rounded-xl border border-border"
     >
-      <h3 className="text-base font-semibold text-foreground mb-1">
-        Day-Ahead Price Evolution
-      </h3>
-      <p className="text-sm text-muted-foreground mb-6">
-        Hourly day-ahead prices with detected anomalies (rolling 7-day baseline)
-      </p>
-      
-      <div className="h-[280px]">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-base font-semibold text-foreground">
+            Day-Ahead Prediction ({area})
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {highlightedSeries 
+              ? `Focusing on: ${highlightedSeries}` 
+              : "Normalized 24h trends (0-1 scale)"}
+          </p>
+        </div>
+        {highlightedSeries && (
+          <button 
+            onClick={() => setHighlightedSeries(null)}
+            className="text-xs bg-secondary hover:bg-secondary/80 px-2 py-1 rounded transition-colors"
+          >
+            Reset Zoom
+          </button>
+        )}
+      </div>
+
+      <div className="h-[320px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={displayData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="hsl(var(--chart-grid))" 
-              vertical={false}
-            />
+          <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="time" 
-              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-              tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-              interval={11}
-            />
-            <YAxis 
-              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-              tickLine={false}
+              dataKey="hour" 
+              tick={{ fontSize: 11 }} 
+              interval={3} 
               axisLine={false}
-              tickFormatter={(value) => `${value}€`}
-              domain={[40, 160]}
             />
-            <Tooltip 
+            <YAxis tick={{ fontSize: 11 }} axisLine={false} domain={[0, 1]} />
+            <Tooltip
               contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                boxShadow: 'var(--shadow-lg)',
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "8px",
               }}
-              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500 }}
-              formatter={(value: number, name: string) => [
-                `${value.toFixed(1)} €/MWh`,
-                name === 'price' ? 'Price' : 'Baseline'
-              ]}
             />
-            {/* Anomaly highlight area */}
-            <ReferenceArea 
-              x1={displayData.length - 17} 
-              x2={displayData.length - 14}
-              fill="hsl(var(--anomaly))"
-              fillOpacity={0.1}
+            <Legend 
+              onClick={handleLegendClick}
+              wrapperStyle={{ cursor: 'pointer', paddingTop: '20px' }}
             />
-            <Line
-              type="monotone"
-              dataKey="baseline"
-              stroke="hsl(var(--chart-baseline))"
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-              dot={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="hsl(var(--chart-price))"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: 'hsl(var(--chart-price))' }}
-            />
+            
+            {seriesConfig.map((s) => {
+              const isActive = highlightedSeries === s.key;
+              const isDimmed = highlightedSeries !== null && !isActive;
+
+              return (
+                <Line
+                  key={s.key}
+                  type="monotone"
+                  dataKey={s.key}
+                  stroke={s.color}
+                  // Se attivo: linea spessa. Se silenziato: linea sottile. Default: 2.
+                  strokeWidth={isActive ? 4 : 2}
+                  // Se c'è un highlight e non è questo: opacità bassa.
+                  strokeOpacity={isDimmed ? 0.15 : 1}
+                  dot={false}
+                  activeDot={{ r: 6 }}
+                  animationDuration={400}
+                />
+              );
+            })}
           </LineChart>
         </ResponsiveContainer>
       </div>
-      
-      <div className="flex items-center gap-6 mt-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-chart-price rounded" />
-          <span>Actual price</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-chart-baseline rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, hsl(var(--chart-baseline)) 0, hsl(var(--chart-baseline)) 4px, transparent 4px, transparent 8px)' }} />
-          <span>7-day baseline</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-3 bg-anomaly/10 rounded" />
-          <span>Anomaly window</span>
-        </div>
-      </div>
+
+      <p className="text-[10px] text-muted-foreground mt-4 italic">
+        * Tip: Click on a legend item to focus a specific timeseries.
+      </p>
     </motion.div>
   );
 }

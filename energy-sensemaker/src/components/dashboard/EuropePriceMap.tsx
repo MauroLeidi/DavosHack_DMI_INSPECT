@@ -272,7 +272,7 @@ export function EuropePriceMap({ date }: EuropePriceMapProps) {
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Day-Ahead Spot Prices</h3>
+          <h3 className="text-lg font-semibold text-foreground">Daily Prices per Country</h3>
           <p className="text-sm text-muted-foreground mt-1">
             {hasData 
               ? `Colors auto-scale based on today's range (${minPrice.toFixed(0)}€ - ${maxPrice.toFixed(0)}€)`
@@ -285,7 +285,7 @@ export function EuropePriceMap({ date }: EuropePriceMapProps) {
         </span>
       </div>
 
-      <div className="relative rounded-xl overflow-hidden border border-border bg-slate-50 shadow-sm" style={{ height: "520px" }}>
+      <div className="relative rounded-xl overflow-hidden border border-border bg-slate-50 shadow-sm" style={{ height: "420px" }}>
         {isLoading && (
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/50 backdrop-blur-sm">
             <div className="text-sm font-medium text-muted-foreground animate-pulse">Loading market data...</div>
