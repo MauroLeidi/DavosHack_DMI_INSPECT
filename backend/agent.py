@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 import volue_insight_timeseries as vit
 from smolagents import CodeAgent, WebSearchTool, OpenAIModel, tool
+import math  # <--- AGGIUNGI QUESTO IMPORT
 
 # Load environment variables (Make sure .env is in the root folder)
 load_dotenv()
@@ -25,7 +26,7 @@ def _make_session() -> Optional[vit.Session]:
 
 SESSION = _make_session()
 
-# --- 2. TOOLS ---
+# --- TOOLS FOR AGENTS---
 
 @tool
 def fetch_energy_data(curve_name: str, start_date: str, end_date: str) -> List[Dict[str, Any]]:
@@ -114,8 +115,6 @@ def get_or_create_agent(session_id: str) -> CodeAgent:
         # print(f"🧠 Reusing agent memory for session: {session_id}")
     
     return AGENT_STORE[session_id]
-
-import math  # <--- AGGIUNGI QUESTO IMPORT
 
 def clean_for_json(obj):
     """

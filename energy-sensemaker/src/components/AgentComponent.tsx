@@ -107,7 +107,7 @@ export const SwissSmartDashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-4 min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-[#333670]" />
-        <p className="text-sm font-medium text-muted-foreground animate-pulse">Analyzing Swiss Market Signals...</p>
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">Analyzing Market Signals...</p>
       </div>
     );
   }
@@ -133,8 +133,7 @@ export const SwissSmartDashboard = () => {
       <div className="p-6 border-b border-border bg-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">🇨🇭</span>
-            <h2 className="text-xl font-bold text-[#333670] tracking-tight">Swiss Smart Intelligence</h2>
+            <h2 className="text-xl font-bold text-[#333670] tracking-tight">Smart Intelligence</h2>
           </div>
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />

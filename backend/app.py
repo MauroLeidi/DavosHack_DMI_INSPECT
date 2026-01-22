@@ -14,7 +14,7 @@ from arch import arch_model
 from scipy.stats import median_abs_deviation
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-from openai import AsyncOpenAI # Ensure you have openai>=1.0.0 installed
+from openai import AsyncOpenAI
 
 
 class VolatilityRequest(BaseModel):
@@ -28,13 +28,13 @@ app = FastAPI(title="DavosHack API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In produzione metti l'URL specifico, per ora va bene *
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# LISTA AGGIORNATA CON ZONE VALIDE
+# EU Areas codes
 EU_AREAS = [
     "ch", "de", "fr", "at", "it", "nl", "be", 
     "dk1", "no2", "se3", "fi", "pl", "es", "uk"
@@ -42,7 +42,7 @@ EU_AREAS = [
 
 DEFAULT_RUN = "EC00"
 
-# Initialize Async Client (better for FastAPI than global openai.api_key)
+# Initialize Async Client
 client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # --- PYDANTIC MODELS ---
@@ -52,7 +52,7 @@ class ChatRequest(BaseModel):
 
 class NarrativeRequest(BaseModel):
     date: str
-    area: str  # <--- Crucial: The region (e.g., "CH", "DE")
+    area: str  # The region (e.g., "CH", "DE")
     volatility_context: Dict
     anomaly_context: Dict
     forecast_data: Dict[str, List[float]] # The forecast arrays
@@ -71,7 +71,7 @@ def fetch_curve_series(curve_name: str, start: datetime, end: datetime) -> pd.Se
     Fetch TIME_SERIES curve data and return pandas Series indexed by timestamps.
     Handles timezone mismatches and empty data.
     """
-    # 1. Trova la curva
+    # Find the curve
     try:
         curve = SESSION.get_curve(name=curve_name)
     except Exception:
@@ -81,24 +81,22 @@ def fetch_curve_series(curve_name: str, start: datetime, end: datetime) -> pd.Se
             raise KeyError(f"Curve not found: {curve_name}")
         curve = results[0]
 
-    # 2. Scarica i dati
+    # Download data
     ts = curve.get_data(
         data_from=start.strftime("%Y-%m-%dT%H:%M:%S"),
         data_to=end.strftime("%Y-%m-%dT%H:%M:%S"),
     )
 
-    # 3. Controllo dati vuoti
     if ts is None:
         return pd.Series(dtype=float)
 
-    # 4. Converti in Pandas e normalizza Timezone
+    # Convert to pandas Series
     try:
         if hasattr(ts, 'to_pandas'):
             s = ts.to_pandas()
         else:
             s = pd.Series(ts.values, index=pd.to_datetime(ts.index))
         
-        # FIX CRITICO: Rimuovi la timezone per matchare le ore del loop
         if s.index.tz is not None:
             s = s.tz_convert("Europe/Berlin")
             s.index = s.index.tz_localize(None)
@@ -126,7 +124,7 @@ def europe_hourly_prices(
     for a in EU_AREAS:
         # Pattern 1: Forecast
         curve_name_forecast = f"pri {a} spot {run} €/mwh cet h f".lower()
-        # Pattern 2: Actuals (per UK/GB a volte cambia valuta/nome, ma proviamo standard)
+        # Pattern 2: Actuals
         curve_name_actual = f"pri {a} spot €/mwh cet h a".lower()
 
         s = pd.Series(dtype=float)
@@ -136,20 +134,19 @@ def europe_hourly_prices(
             try:
                 s = fetch_curve_series(curve_name_actual, start, end)
             except Exception as e:
-                # print(f"ERRORE RECUPERO {a.upper()}: {e}")
                 missing.append(a.upper())
         
         if not s.empty:
-            # Resample orario e fill forward se mancano pezzi piccoli
+            # Resample to hourly if needed
             s = s.resample("H").mean()
             by_area[a.upper()] = s
         else:
             by_area[a.upper()] = pd.Series(dtype=float)
 
-    # Costruzione risposta JSON
+    # Build the hourly price list
     hours: List[Dict] = []
     for h in range(24):
-        t = pd.Timestamp(start + timedelta(hours=h)) # Crea timestamp naive
+        t = pd.Timestamp(start + timedelta(hours=h))
         prices: Dict[str, Optional[float]] = {}
         for area_code, series in by_area.items():
             if t in series.index:
@@ -170,55 +167,49 @@ def europe_hourly_prices(
 @app.get("/v1/dashboard/swiss-smart")
 def get_swiss_forecast_chart():
     """
-    Restituisce i dati di previsione per la Svizzera (CH) formattati per Chart.js,
-    identificando il momento migliore per consumare energia.
+    Gives back the next 48h Swiss spot price forecast analysis and chart data.
     """
     if not SESSION:
         raise HTTPException(status_code=503, detail="Volue Session not initialized")
 
-    curve_name = 'pri ch spot ec00 €/mwh cet h f'
+    curve_name = 'pri de spot ec00 €/mwh cet h f'
     
     try:
-        # 1. Recupera la curva
+        # Get the curve
         curve = SESSION.get_curve(name=curve_name)
         
-        # 2. Scarica l'ULTIMA previsione (Latest Forecast)
-        # Questo prende automaticamente l'ultimo "run" disponibile
+        # Get the latest forecast instance with data
         latest_forecast = curve.get_latest(with_data=True)
         
         if latest_forecast is None:
             raise HTTPException(status_code=404, detail="No forecast data found")
 
-        # 3. Conversione in Pandas
+        # Convert to pandas
         ts = latest_forecast.to_pandas()
         
-        # Filtro: prendiamo da "adesso" fino alle prossime 48 ore
+        # Get current time in the same timezone as the data
         now = pd.Timestamp.now(tz=ts.index.tz)
         end_view = now + pd.Timedelta(hours=48)
         
         # Slice dei dati
         subset = ts[(ts.index >= now) & (ts.index <= end_view)]
         
-        # Se il subset è vuoto (es. siamo a fine giornata e la forecast finisce), prendiamo gli ultimi dati disponibili
+        # If no data in the next 48h, take last 24h available
         if subset.empty:
             subset = ts.tail(24)
 
-        # 4. Analisi "Smart"
         min_price = subset.min()
         max_price = subset.max()
-        best_time_idx = subset.idxmin() # Timestamp del prezzo minimo
+        best_time_idx = subset.idxmin() 
         
-        # Formattazione per il Frontend
         best_time_str = best_time_idx.strftime("%H:%M")
         best_day_str = best_time_idx.strftime("%d/%m")
 
-        # 5. Costruzione JSON per Chart.js
-        # Chart.js vuole due array principali: labels (asse X) e data (asse Y)
+        # formatting for chart.js data
         labels = [t.strftime("%Y-%m-%dT%H:%M:%S") for t in subset.index]
         values = [round(float(v), 2) for v in subset.values]
         
-        # Creiamo un array di colori per evidenziare il punto minimo nel grafico
-        # Default blu, ma il punto minimo diventa Rosso
+        # Highlight min price point
         point_colors = []
         point_radius = []
         for v in values:
@@ -243,7 +234,7 @@ def get_swiss_forecast_chart():
             "labels": labels,
             "datasets": [
                 {
-                    "label": "Spot Price Forecast (CH) - EC00",
+                    "label": "Spot Price Forecast (DE) - EC00",
                     "data": values,
                     # Brand Color: #333670
                     "borderColor": "#333670",
@@ -263,7 +254,7 @@ def get_swiss_forecast_chart():
                 "legend": {"display": False},
                 "title": {
                     "display": True, 
-                    "text": "48h Swiss Spot Price Forecast"
+                    "text": "48h German Spot Price Forecast"
                 }
             },
             "scales": {
@@ -305,6 +296,8 @@ async def chat_endpoint(request: ChatRequest):
 
 @app.post("/v1/volatility")
 def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
+    """
+    Calculates volatility regime and price anomaly for a given area and date."""
     area = req.area.lower()
     date_ = req.date
 
@@ -390,23 +383,16 @@ def volatility_anomaly_check(req: VolatilityRequest = Body(...)):
             issue_date_to=end,
             with_data=True
         )
-        print('HERE: ')
-        print(df_instances)
         if not df_instances:
             series_dict[name] = pd.Series(dtype=float)
             continue
         df = df_instances[-1].to_pandas()
-        print(df)
         # Resample to hourly
         resampled = df.resample("H").mean()
         series_dict[name] = resampled
 
-    print('HERE2')
-    print(series_dict)
     # Combine into a single DataFrame and drop missing hours
     df_all = pd.DataFrame(series_dict).dropna()
-    print('DF ALL')
-    print(df_all)
     # Min-Max normalize 0-1
     if not df_all.empty:
         scaler = MinMaxScaler(feature_range=(0, 1))

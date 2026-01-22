@@ -6,7 +6,6 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useState } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 const regions = [
   { code: "CH", name: "Switzerland" },
