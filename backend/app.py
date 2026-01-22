@@ -170,13 +170,13 @@ def europe_hourly_prices(
 @app.get("/v1/dashboard/swiss-smart")
 def get_swiss_forecast_chart():
     """
-    Restituisce i dati di previsione per la Svizzera (CH) formattati per Chart.js,
+    Restituisce i dati di previsione per la Germania (DE) formattati per Chart.js,
     identificando il momento migliore per consumare energia.
     """
     if not SESSION:
         raise HTTPException(status_code=503, detail="Volue Session not initialized")
 
-    curve_name = 'pri ch spot ec00 €/mwh cet h f'
+    curve_name = 'pri de spot ec00 €/mwh cet h f'
     
     try:
         # 1. Recupera la curva
@@ -243,7 +243,7 @@ def get_swiss_forecast_chart():
             "labels": labels,
             "datasets": [
                 {
-                    "label": "Spot Price Forecast (CH) - EC00",
+                    "label": "Spot Price Forecast (DE) - EC00",
                     "data": values,
                     # Brand Color: #333670
                     "borderColor": "#333670",
@@ -263,7 +263,7 @@ def get_swiss_forecast_chart():
                 "legend": {"display": False},
                 "title": {
                     "display": True, 
-                    "text": "48h Swiss Spot Price Forecast"
+                    "text": "48h German Spot Price Forecast"
                 }
             },
             "scales": {
