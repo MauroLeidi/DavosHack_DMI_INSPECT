@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+pandas
+numpy
+scipy
+scikit-learn
+arch
+volue-insight-timeseries
+smolagents
+openai>=1.0.0
